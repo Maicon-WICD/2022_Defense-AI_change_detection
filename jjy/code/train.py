@@ -15,7 +15,7 @@ from utils import initialize_metrics, get_mean_metrics, set_metrics, hybrid_loss
 from sklearn.metrics import precision_recall_fscore_support as prfs
 from models.Models import Siam_NestedUNet_Conc, SNUNet_ECAM
 from datasets.dataset import get_loaders
-
+from utils import Evaluator
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -36,7 +36,7 @@ def train(args):
     train_loader, val_loader = get_loaders(args) ####### 메모
     
     # model =                  ######## 모델 메모
-    model = SNUNet_ECAM(in_ch=3, out_ch=2).to(device)
+    model = SNUNet_ECAM(in_ch=args.input_channel, out_ch=args.output_channel).to(device)
     
     criterion = hybrid_loss ## get_criterion 메모
 #     criterion = nn.CrossEntropyLoss()
@@ -45,8 +45,11 @@ def train(args):
     
     
     # train 시퀀스 메모
-    best_metrics = {'cd_f1scores': -1, 'cd_recalls': -1, 'cd_precisions': -1}
+    best_metrics = {'cd_f1scores': -1, 'cd_recalls': -1, 'cd_precisions': -1, 'cd_miou':-1}
     total_step = -1
+    evaluator = Evaluator(args.output_channel) # 추가 - num_class = 2 metadata 에 추가해야함
+    
+    early_stop_count = 0 ###########
 
     for epoch in range(args.epochs):
         train_metrics = initialize_metrics()
@@ -102,6 +105,8 @@ def train(args):
         
         # valid
         model.eval()
+        evaluator.reset()
+        
         with torch.no_grad():
             for batch_img1, batch_img2, labels in val_loader:
                 # Set variables for training
@@ -135,25 +140,39 @@ def train(args):
 
                 # log the batch mean metrics
                 mean_val_metrics = get_mean_metrics(val_metrics)
+                evaluator.add_batch(labels, cd_preds) ##########
 
                 # clear batch variables from memory
                 del batch_img1, batch_img2, labels
+                
+            mIoU = evaluator.Mean_Intersection_over_Union() # 추가
+            mean_val_metrics['cd_miou'] = mIoU # 추가
+            
             print("EPOCH {} VALIDATION METRICS".format(epoch)+str(mean_val_metrics))
             
-            if ((mean_val_metrics['cd_precisions'] > best_metrics['cd_precisions'])
-                or
-                (mean_val_metrics['cd_recalls'] > best_metrics['cd_recalls'])
-                or
-                (mean_val_metrics['cd_f1scores'] > best_metrics['cd_f1scores'])):
+            
+#             if ((mean_val_metrics['cd_precisions'] > best_metrics['cd_precisions'])
+#                 or
+#                 (mean_val_metrics['cd_recalls'] > best_metrics['cd_recalls'])
+#                 or
+#                 (mean_val_metrics['cd_f1scores'] > best_metrics['cd_f1scores'])):
+            if mean_val_metrics['cd_miou'] > best_metrics['cd_miou']:
                 print("update model")
                 
                 # Save model
                 if not os.path.exists(f'./{args.name}'):
                     os.mkdir(f'./{args.name}')
                 
-                torch.save(model, f"./{args.name}/checkpoint_{str(epoch)}_{mean_val_metrics['cd_f1scores']:4.4}.pt")
+                torch.save(model, f"./{args.name}/checkpoint_{str(epoch)}_{mean_val_metrics['cd_miou']:4.4}.pt")
                 best_metrics = mean_val_metrics
-                
+                early_stop_count = 0
+            else:
+                early_stop_count += 1
+            
+            if early_stop_count >= args.patience:
+                print(f'--------epoch {epoch} early stopping--------')
+                print(f'--------epoch {epoch} early stopping--------')
+                break
             print()
                                       
                 
@@ -169,6 +188,10 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for training (default: 64)')
     parser.add_argument('--patch_size', type=int, default=256, help='input patch size (default: 256)')
     
+    parser.add_argument('--input_channel', type=int, default=3, help='input channel (default: 3)')
+    parser.add_argument('--output_channel', type=int, default=2, help='output channel (num_class) (default: 2)')
+    parser.add_argument('--patience', type=int, default=11, help='early stop (default: 11)')
+    
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
     parser.add_argument('--step_size', type=int, default=10, help='stepLR step size')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
@@ -177,3 +200,5 @@ if __name__ == '__main__':
     print(args)
     
     train(args)
+    
+    
