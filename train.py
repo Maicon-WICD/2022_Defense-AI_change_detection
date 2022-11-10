@@ -1,5 +1,4 @@
-"""Train
-"""
+
 from datetime import datetime
 from time import time
 import numpy as np
@@ -7,7 +6,8 @@ import shutil, random, os, sys, torch
 from glob import glob
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
-
+from torchinfo import summary
+from models.DeepLab import *
 prj_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(prj_dir)
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
                                 num_workers=config['num_workers'], 
                                 shuffle=config['shuffle'],
                                 drop_last=config['drop_last'])
-                                
+
     val_dataloader = DataLoader(dataset=val_dataset,
                                 batch_size=config['batch_size'],
                                 num_workers=config['num_workers'], 
@@ -88,11 +88,8 @@ if __name__ == '__main__':
     logger.info(f"Load dataset, train: {len(train_dataset)}, val: {len(val_dataset)}")
     
     # Load model
-    model = get_model(model_str=config['architecture'])
-    model = model(classes=config['n_classes'],
-                encoder_name=config['encoder'],
-                encoder_weights=config['encoder_weight'],
-                activation=config['activation']).to(device)
+    model = DeepLab(num_classes=4)
+    summary(model,input_size=(16,3,256,480))
     logger.info(f"Load model architecture: {config['architecture']}")
 
     # Set optimizer
@@ -154,6 +151,7 @@ if __name__ == '__main__':
         toc = time()
         # Write tarin result to result row
         row['train_loss'] = trainer.loss  # Loss
+        print(trainer.loss)
         for metric_name, metric_score in trainer.scores.items():
             row[f'train_{metric_name}'] = metric_score
 
@@ -168,11 +166,11 @@ if __name__ == '__main__':
         trainer.validate(dataloader=val_dataloader, epoch_index=epoch_id)
         toc = time()
         row['val_loss'] = trainer.loss
+        print(trainer.loss)
         # row[f"val_{config['metric']}"] = trainer.score
         for metric_name, metric_score in trainer.scores.items():
             row[f'val_{metric_name}'] = metric_score
         row['val_elapsed_time'] = round(toc-tic, 1)
-        print(f"val_miou : {row['val_miou']}, val_loss : {row['val_loss']}")
         trainer.clear_history()
 
         # Performance record - row

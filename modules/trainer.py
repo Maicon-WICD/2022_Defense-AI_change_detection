@@ -43,11 +43,9 @@ class Trainer():
         
         self.model.train()
         for batch_id, (x, y, filename) in enumerate(tqdm(dataloader)):
-
             # Load data to gpu
             x = x.to(self.device, dtype=torch.float)
             y = y.to(self.device, dtype=torch.long)
-            
             # Inference
             y_pred = self.model(x)
             

@@ -58,6 +58,6 @@ class Iou:
         union = union.view(batch_size, -1).sum(1)
     
         iou = (intersection + SMOOTH) / (union + SMOOTH)
-        print(iou.mean())
+    
         return iou.mean()
 

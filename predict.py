@@ -7,7 +7,7 @@ import numpy as np
 import random, os, sys, torch, cv2, warnings
 from glob import glob
 from torch.utils.data import DataLoader
-
+from models.UperNet import *
 prj_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(prj_dir)
 
@@ -70,12 +70,7 @@ if __name__ == '__main__':
     logger.info(f"Load test dataset: {len(test_dataset)}")
 
     # Load architecture
-    model = get_model(model_str=train_config['architecture'])
-    model = model(
-                classes=train_config['n_classes'],
-                encoder_name=train_config['encoder'],
-                encoder_weights=train_config['encoder_weight'],
-                activation=train_config['activation']).to(device)
+    model = UperNet_L(num_classes=4).to(device)
     logger.info(f"Load model architecture: {train_config['architecture']}")
 
     #! Load weight
