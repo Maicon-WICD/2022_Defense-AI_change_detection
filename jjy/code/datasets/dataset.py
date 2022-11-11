@@ -111,17 +111,17 @@ class CDDataset(Dataset):
         label1 = Image.fromarray(label_img[:, :label_img_shape[1]//2])
         label2 = Image.fromarray(label_img[:, label_img_shape[1]//2:])
         label1 = label1.crop([5,5,(label_img_shape[1]//2)-5,label_img_shape[0]-5])
-        label1 = np.asarray(label1)
+        label1 = np.asarray(label1,dtype=np.int32)
         label2 = label2.crop([5,5,(label_img_shape[1]//2)-5,label_img_shape[0]-5])
-        label2 = np.asarray(label2)
+        label2 = np.asarray(label2,dtype=np.int32)
         label1 = cv2.resize(label1, dsize = (754, 754), interpolation=cv2.INTER_NEAREST)
         label2 = cv2.resize(label2, dsize = (754, 754), interpolation=cv2.INTER_NEAREST)
         label1 = Image.fromarray(label1)
         label2 = Image.fromarray(label2)
         label1 = label1.crop([5,5,749,749])
-        label1 = np.asarray(label1)
+        label1 = np.asarray(label1,dtype=np.int32)
         label2 = label2.crop([5,5,749,749])
-        label2 = np.asarray(label2)
+        label2 = np.asarray(label2,dtype=np.int32)
         label = label1 + label2
         label = cv2.resize(label, dsize = (self.img_size[0], self.img_size[1]), interpolation=cv2.INTER_NEAREST)
         img1 = Image.fromarray(img1)
@@ -131,31 +131,6 @@ class CDDataset(Dataset):
         
         if self.transform:
             sample = self.transform(sample)
-        
-#         A = np.array(A_img).astype(np.float32).transpose((2, 0, 1))
-#         B = np.array(B_img).astype(np.float32).transpose((2, 0, 1))
-        
-#         L_path = self.L_paths[index]
-        
-        # 1번 방법
-#         L_s = Image.open(L_path)
-#         mask = np.array(L_s).astype(np.float32) / 255.0
-#         mask = np.array(mask).astype(np.float32).transpose((2, 0, 1))
-
-#         A = torch.from_numpy(A).float()
-#         B = torch.from_numpy(B).float()
-        
-#         L = torch.from_numpy(mask).float()
-        # 2번 방법
-#         tmp = np.array(Image.open(L_path), dtype=np.uint32)/255
-#         L_img = Image.fromarray(tmp)
-#         L_s = L_img.float()
-#         L_s = F.interpolate(L_s, size=torch.Size([A_img.shape[2], A_img.shape[3]]),mode='nearest')
-#         L_s[self.L_s == 1] = -1  # change
-#         L_s[self.L_s == 0] = 1  # no change
-        
-#         if transform:
-#             pass
         
         return sample['image'][0], sample['image'][1], sample['label']
 

@@ -38,12 +38,12 @@ def train(args):
     train_loader, val_loader = get_loaders(args) ####### 메모
     
     # model =                  ######## 모델 메모
-    model = SNUNet_ECAM(in_ch=args.input_channel, out_ch=args.output_channel).to(device)
+    model = Siam_NestedUNet_Conc(in_ch=args.input_channel, out_ch=args.output_channel).to(device)
     
-#     criterion = hybrid_loss ## get_criterion 메모
-    criterion = GeneralizedDiceLoss()
+    criterion = hybrid_loss ## get_criterion 메모
+#     criterion = GeneralizedDiceLoss()
 #     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr) # Be careful when you adjust learning rate, you can refer to the linear scaling rule
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr) # Be careful when you adjust learning rate, you can refer to the linear scaling rule
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=0.5)
     
     
@@ -58,8 +58,8 @@ def train(args):
     early_stop_count = 0 ###########
 
     for epoch in range(args.epochs):
-        train_metrics = {metric_name:-1 for metric_name in metrics_name}
-        val_metrics = {metric_name:-1 for metric_name in metrics_name}
+        train_metrics = {metric_name:0 for metric_name in metrics_name}
+        val_metrics = {metric_name:0 for metric_name in metrics_name}
 
         model.train()
         
@@ -77,16 +77,19 @@ def train(args):
             optimizer.zero_grad()
             # Get model predictions, calculate loss, backprop
             cd_preds = model(batch_img1, batch_img2)
+#             print(cd_preds.shape)
             cd_preds = cd_preds[-1]
             cd_loss = criterion(cd_preds, labels)
             loss = cd_loss
             
-            
+#             print(loss.item())
             loss.backward()
             optimizer.step()
             
+#             print(loss)
+#             print(cd_preds.argmax(1))
+#             print(labels)
             
-#             _, cd_preds = torch.max(cd_preds, 1)
             
             # Metric
             for metric_name, metric_func in metric_funcs.items():
@@ -115,7 +118,7 @@ def train(args):
             del batch_img1, batch_img2, labels
         scheduler.step()
 #         print("EPOCH {} TRAIN METRICS".format(epoch) + str(mean_train_metrics))
-        print("EPOCH {} TRAIN METRICS".format(epoch) + str(train_metrics) + "|| loss :"+str(loss))
+        print("EPOCH {} TRAIN METRICS".format(epoch) + str(train_metrics) + "|| loss :"+str(loss.item()))
         
         # valid
         model.eval()

@@ -85,9 +85,9 @@ def hybrid_loss(predictions, target):
     focal = FocalLoss(gamma=0, alpha=None)
 
     for prediction in predictions:
-        bce = focal(prediction, target)
-        dice = dice_loss(prediction, target)
-        loss += bce + dice
+        bce = focal(predictions, target)
+        dice = dice_loss(predictions, target)
+    loss += bce + dice
 
     return loss
 
@@ -103,15 +103,21 @@ class Normalize(object):
         self.std = std
 
     def __call__(self, sample):
-        img = sample['image']
+        img1 = sample['image'][0]
+        img2 = sample['image'][0]
         mask = sample['label']
-        img = np.array(img).astype(np.float32)
+        img1 = np.array(img1).astype(np.float32)
+        img2 = np.array(img2).astype(np.float32)
         mask = np.array(mask).astype(np.float32)
-        img /= 255.0
-        img -= self.mean
-        img /= self.std
+        
+        img1 /= 255.0
+        img1 -= self.mean
+        img1 /= self.std
+        img2 /= 255.0
+        img2 -= self.mean
+        img2 /= self.std
 
-        return {'image': img,
+        return {'image': (img1, img2),
                 'label': mask}
 
 
@@ -303,8 +309,10 @@ def get_transforms(istrain=False):
                 RandomFixRotate(),
                 # RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size),
                 # RandomGaussianBlur(),
-                # Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-                ToTensor()])
+                
+                ToTensor(),
+                Normalize(mean=0.5, std=0.225)
+        ])
     else:
         transform = transforms.Compose([
                 # RandomHorizontalFlip(),
