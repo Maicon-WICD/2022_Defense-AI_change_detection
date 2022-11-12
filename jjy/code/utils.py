@@ -82,7 +82,7 @@ def hybrid_loss(predictions, target):
 
     # gamma=0, alpha=None --> CE
     
-    focal = FocalLoss(gamma=0, alpha=None)
+    focal = FocalLoss(gamma=2, alpha=None)
 
     for prediction in predictions:
         bce = focal(predictions, target)
@@ -133,7 +133,7 @@ class ToTensor(object):
         mask = sample['label']
         img1 = np.array(img1).astype(np.float32).transpose((2, 0, 1))
         img2 = np.array(img2).astype(np.float32).transpose((2, 0, 1))
-        mask = np.array(mask).astype(np.float32) / 255.0
+        mask = np.array(mask).astype(np.float32) # / 255.0
 
         img1 = torch.from_numpy(img1).float()
         img2 = torch.from_numpy(img2).float()

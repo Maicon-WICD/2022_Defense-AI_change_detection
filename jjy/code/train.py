@@ -18,6 +18,8 @@ from datasets.dataset import get_loaders
 from utils import get_metric_function, hybrid_loss
 from loss import CCE, GeneralizedDiceLoss
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"  # Arrange GPU devices starting from 0
+os.environ["CUDA_VISIBLE_DEVICES"]= "2"
 metrics_name = ['miou', 'iou1', 'iou2', 'iou3']
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -87,13 +89,15 @@ def train(args):
             optimizer.step()
             
 #             print(loss)
-#             print(cd_preds.argmax(1))
-#             print(labels)
+            # print(cd_preds.argmax(1))
+            # print(labels)
             
             
             # Metric
             for metric_name, metric_func in metric_funcs.items():
                 train_metrics[metric_name] += metric_func(cd_preds.argmax(1), labels).item() / len(train_loader)
+                # print(metric_func(cd_preds.argmax(1), labels).item())
+                # print(metric_func(cd_preds.argmax(1), labels).item() / len(train_loader))
             
             # Calculate and log other batch metrics
 #             cd_corrects = (100 *
@@ -139,6 +143,8 @@ def train(args):
                 
                 for metric_name, metric_func in metric_funcs.items():
                     val_metrics[metric_name] += metric_func(cd_preds.argmax(1), labels).item() / len(val_loader)
+                    # print(metric_func(cd_preds.argmax(1), labels).item(), len(val_loader))
+                    # print(metric_func(cd_preds.argmax(1), labels).item() / len(val_loader))
 #                 _, cd_preds = torch.max(cd_preds, 1)
 
                 # Calculate and log other batch metrics
