@@ -4,7 +4,7 @@ import itertools
 import os
 import random
 from datetime import datetime
-from os import WCOREDUMP
+from os import WCOREDUMP  #이거 도대체 뭐야?
 
 import cv2
 import numpy as np
@@ -32,7 +32,7 @@ from util import metrics
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 # 하이퍼 파라미터 설정
-data_sources = "/workspace/Dataset/" # 데이터 경로
+data_sources = "../../" # 데이터 경로
 batch_size = 2 # 배치 사이즈 설정
 learning_rate = 1e-4 # 학습률 설정
 epoch_parameter = 300 # 에폭 수 설정
@@ -59,8 +59,10 @@ val_labels_list = glob.glob("%sval/mask/*.png" % data_sources)
 
 
 z = list(zip(train_images1_list, train_images2_list, train_labels_list))
+
 random.shuffle(z)
 train_images1_list, train_images2_list, train_labels_list = (zip(*z))
+
 
 BACKBONE = 'vgg19'
 
@@ -82,6 +84,7 @@ train_generator = custom_data_generator.image_generator(
     train_images1_list, train_images2_list, train_labels_list, batch_size, one_hot_label, data_aug, True)
 val_generator = custom_data_generator.image_generator(
     val_images1_list, val_images2_list, val_labels_list, batch_size, one_hot_label, False)
+
 checkpoint_dir = "./checkpoints/%s/" % (checkpoint_name)
 
 if not os.path.exists(checkpoint_dir):
@@ -94,7 +97,7 @@ model_json = model.to_json()
 with open(checkpoint_dir+model_name+".json", 'w') as json_file:
     json_file.write(model_json)
 
-avaliabe_gpus = len(K.tensorflow_backend._get_available_gpus())
+avaliabe_gpus = len(K.tensorflow_backend._get_available_gpus()) # K 이거 뭐야?
 
 if avaliabe_gpus > 1:
 
@@ -124,7 +127,7 @@ class onEachEpochCheckPoint(Callback):
 
         BG_IU, CH_IU, BG_P, CH_P, precision_, recall_, f_score_ = metrics.calculate_IoU_Per_Epoch_1(
             model, val_images1_list, val_images2_list, val_labels_list, checkpoint_dir, epoch, True, False)
-
+    
         global best_iou
         global Highest_F1_Score
 
