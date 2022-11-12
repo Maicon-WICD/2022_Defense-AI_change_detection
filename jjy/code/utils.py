@@ -85,9 +85,9 @@ def hybrid_loss(predictions, target):
     focal = FocalLoss(gamma=0, alpha=None)
 
     for prediction in predictions:
-        bce = focal(prediction, target)
-        dice = dice_loss(prediction, target)
-        loss += bce + dice
+        bce = focal(predictions, target)
+        dice = dice_loss(predictions, target)
+    loss += bce + dice
 
     return loss
 
@@ -103,15 +103,21 @@ class Normalize(object):
         self.std = std
 
     def __call__(self, sample):
-        img = sample['image']
+        img1 = sample['image'][0]
+        img2 = sample['image'][0]
         mask = sample['label']
-        img = np.array(img).astype(np.float32)
+        img1 = np.array(img1).astype(np.float32)
+        img2 = np.array(img2).astype(np.float32)
         mask = np.array(mask).astype(np.float32)
-        img /= 255.0
-        img -= self.mean
-        img /= self.std
+        
+        img1 /= 255.0
+        img1 -= self.mean
+        img1 /= self.std
+        img2 /= 255.0
+        img2 -= self.mean
+        img2 /= self.std
 
-        return {'image': img,
+        return {'image': (img1, img2),
                 'label': mask}
 
 
@@ -303,8 +309,10 @@ def get_transforms(istrain=False):
                 RandomFixRotate(),
                 # RandomScaleCrop(base_size=self.args.base_size, crop_size=self.args.crop_size),
                 # RandomGaussianBlur(),
-                # Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-                ToTensor()])
+                
+                ToTensor(),
+                Normalize(mean=0.5, std=0.225)
+        ])
     else:
         transform = transforms.Compose([
                 # RandomHorizontalFlip(),
@@ -316,91 +324,61 @@ def get_transforms(istrain=False):
                 ToTensor()])
     return transform
 
-class Evaluator(object):
-    def __init__(self, num_class):
-        self.num_class = num_class
-        # self.confusion_matrix = np.zeros((self.num_class,)*2)
-        self.confusion_matrix = torch.zeros(self.num_class, self.num_class)
+SMOOTH = 1e-6
 
-    def Pixel_Accuracy(self):
-        # Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
-        Acc = torch.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
-        return Acc
+def get_metric_function(metric_function_str):
+    """
+    Add metrics, weights for weighted score
+    """
 
-    def Pixel_Accuracy_Class(self):
-        # Acc = np.diag(self.confusion_matrix) / self.confusion_matrix.sum(axis=1)
-        Acc = torch.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum(dim=0).data.cpu().numpy()
-        Acc = np.nanmean(Acc)
-        # Acc = Acc.mean()
-        return Acc
+    if metric_function_str == 'miou':
+        iou = Iou()
+        return iou.get_miou
 
-    def Mean_Intersection_over_Union(self):
-        # MIoU = np.diag(self.confusion_matrix) / (
-        #             np.sum(self.confusion_matrix, axis=1) + np.sum(self.confusion_matrix, axis=0) -
-        #             np.diag(self.confusion_matrix))
-        MIoU = torch.diag(self.confusion_matrix) / (
-            self.confusion_matrix.sum(dim=1) + self.confusion_matrix.sum(dim=0) - torch.diag(self.confusion_matrix)
-        ).data.cpu().numpy()
-        MIoU = np.nanmean(MIoU)
-        # MIoU = MIoU.mean()
-        return MIoU
+    elif metric_function_str == 'iou1':
+        iou =Iou(class_num=1)
+        return iou.get_iou 
 
-    def Precision(self):
-        Pre = self.confusion_matrix[1][1] / (self.confusion_matrix[0][1] + self.confusion_matrix[1][1]).data.cpu().numpy()
-        return Pre
+    elif metric_function_str == 'iou2':
+        iou =Iou(class_num=2)
+        return iou.get_iou
 
-    def Recall(self):
-        Re = self.confusion_matrix[1][1] / (self.confusion_matrix[1][1] + self.confusion_matrix[1][0]).data.cpu().numpy()
-        return Re
+    elif metric_function_str == 'iou3':
+        iou =Iou(class_num=3)
+        return iou.get_iou
 
-    def F1(self):
-        Pre = self.confusion_matrix[1][1] / (self.confusion_matrix[0][1] + self.confusion_matrix[1][1])
-        Re = self.confusion_matrix[1][1] / (self.confusion_matrix[1][1] + self.confusion_matrix[1][0])
-        F1 = 2 * Pre * Re / (Pre+Re)
-        return F1
+        
+class Iou:
+    
+    def __init__(self, class_num:int=0):
+        self.class_num = class_num
+        
+    def get_iou(self, outputs: torch.Tensor, labels: torch.Tensor):
+        mask_value = self.class_num
 
-    def Frequency_Weighted_Intersection_over_Union(self):
-        # freq = np.sum(self.confusion_matrix, axis=1) / np.sum(self.confusion_matrix)
-        freq = self.confusion_matrix.sum(dim=1) / self.confusion_matrix.sum()
-        # iu = np.diag(self.confusion_matrix) / (
-        #             np.sum(self.confusion_matrix, axis=1) + np.sum(self.confusion_matrix, axis=0) -
-        #             np.diag(self.confusion_matrix))
-        iu = torch.diag(self.confusion_matrix) / (
-            self.confusion_matrix.sum(dim=1) + self.confusion_matrix.sum(dim=0) -
-            torch.diag(self.confusion_matrix))
+        batch_size = outputs.size()[0]
+            
+        intersection = ((outputs.int() == mask_value) & (labels.int() == mask_value) & (outputs.int() == labels.int())).float()
+        intersection = intersection.view(batch_size, -1).sum(1)
 
-        # FWIoU = (freq[freq > 0] * iu[freq > 0]).sum()
-        FWIoU = (freq[freq > 0] * iu[freq > 0]).sum()
-        return FWIoU
+        union = ((outputs.int() == mask_value) | (labels.int() == mask_value)).float()
+        union = union.view(batch_size, -1).sum(1)
 
-    # def _generate_matrix(self, gt_image, pre_image):
-    #     mask = (gt_image >= 0) & (gt_image < self.num_class)
-    #     label = self.num_class * gt_image[mask].astype('int') + pre_image[mask]
-    #     count = np.bincount(label, minlength=self.num_class**2)
-    #     confusion_matrix = count.reshape(self.num_class, self.num_class)
-    #     return confusion_matrix
+        iou = (intersection + SMOOTH) / (union + SMOOTH)
+            
+        return iou.mean()
 
-    def generate_matrix(self, gt_image, pre_image):
-        mask = (gt_image >= 0) & (gt_image < self.num_class)
-        # print(gt_image.device)
-        # print(gt_image[mask].device)
-        # print(gt_image[mask].type(torch.IntTensor).device)
-        # print((self.num_class * gt_image[mask].type(torch.IntTensor)).device)
-        # print((self.num_class * gt_image[mask].type(torch.IntTensor) + pre_image[mask]).device)
-        label = self.num_class * gt_image[mask].type(torch.IntTensor).cuda() + pre_image[mask]
-        tn = (label == 0).type(torch.IntTensor).sum()
-        fp = (label == 1).type(torch.IntTensor).sum()
-        fn = (label == 2).type(torch.IntTensor).sum()
-        tp = (label == 3).type(torch.IntTensor).sum()
-        confusion_matrix = torch.tensor([[tn, fp], [fn, tp]])
-        return confusion_matrix
+    def get_miou(self, outputs: torch.Tensor, labels: torch.Tensor):
+        # Not exactly match the mIoU definition
+        batch_size = outputs.size()[0]
+    
+        intersection = ((outputs.int() > 0) & (labels.int() > 0) & (outputs.int() == labels.int())).float()
+        intersection = intersection.view(batch_size, -1).sum(1)
+    
+        union = ((outputs.int() > 0) | (labels.int() > 0)).float()
+        union = union.view(batch_size, -1).sum(1)
+    
+        iou = (intersection + SMOOTH) / (union + SMOOTH)
+    
+        return iou.mean()
 
-    def add_batch(self, gt_image, pre_image):
-        # assert gt_image.shape == pre_image.shape
-
-        assert gt_image.shape == pre_image.shape
-        self.confusion_matrix += self.generate_matrix(gt_image, pre_image)
-
-    def reset(self):
-        # self.confusion_matrix = np.zeros((self.num_class,) * 2)
-        self.confusion_matrix = torch.zeros(self.num_class, self.num_class)
