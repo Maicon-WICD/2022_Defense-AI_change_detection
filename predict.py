@@ -70,7 +70,19 @@ if __name__ == '__main__':
     logger.info(f"Load test dataset: {len(test_dataset)}")
 
     # Load architecture
-    model = UperNet_L(num_classes=4).to(device)
+    # Load model
+    if config['architecture'] == "DeepLab_F":
+      Net = DeepLab(num_classes=4)
+    else:
+      Net = get_model(model_str=config['architecture'])
+      Net = Net(classes=config['n_classes'],
+                  encoder_name=config['encoder'],
+                  encoder_weights=config['encoder_weight'],
+                  activation=config['activation']).cuda()
+    model = nn.DataParallel(Net,device_ids=[0,1,2])
+         
+    if(device.type =="cuda")and(torch.cuda.device_count()>1):
+        print('Multi GPU activate')
     logger.info(f"Load model architecture: {train_config['architecture']}")
 
     #! Load weight

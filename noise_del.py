@@ -10,7 +10,7 @@ file_list = ['x','y']
 for noise in range(len(data_list)):
     for i in data_list[noise]:
         for k in file_list:
-            file_path='./data/train/'+k+'/'+i
+            file_path='/data/train/'+k+'/'+i
             if os.path.isfile(file_path):
                 os.remove(file_path)
                 print(file_path)

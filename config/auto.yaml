@@ -1,62 +1,3 @@
-# System
-gpu_num: 0,1
-seed: 42
-debug: False
-verbose: False
-
-# Train / val
-eval_size: 0.2
-val_size: 0.3
-
-# Data Loader
-input_width: 480
-input_height: 256
-scaler: normalize
-num_workers: 0
-shuffle: True
-drop_last: False
-
-# Model
-architecture: DeepLabV3Plus
-encoder: timm-efficientnet-b1 #timm-regnety_016
-encoder_weight: noisy-student #imagenet
-depth: 5
-num_classes: 4
-activation: null
-
-# Trainer
-n_epochs: 100
-batch_size: 100
-loss: 
-  name: MeanCCELoss # MeanCCELoss
-  args:
-    #weight: [0.0477, 0.1028, 0.0477, 0.8494]
-    #weight: [20.9632, 9.7238, 20.9632, 1.1772]
-metrics: 
-  - miou
-  - iou1
-  - iou2
-  - iou3
-earlystopping_target: val_miou
-earlystopping_patience: 5
-optimizer:
-  name: AdamW
-  args:
-    lr: 5.0e-04
-    weight_decay: 5.0e-02
-scheduler:
-  name: CosineAnnealingLR
-  args:
-    T_max: 100
-    eta_min: 0
-
-# Logging
-plot:
-  - loss
-  - miou
-  - iou1
-  - iou2
-  - iou3
 # Dataset, either Cifar10/Cifar100/ImageNet/INAT
 dataset: Cifar10
 datapath: ~/data/
@@ -106,8 +47,8 @@ up_val_batch_size: 128
 # Upper level configs
 up_configs:
   # Number of batches when computing hyper-gradient
-  train_batches: 3
-  val_batches: 3
+  train_batches: 70
+  val_batches: 70
   # The upper optimization start and end epoch, 
   end_epoch: 100
   start_epoch: 0
@@ -121,8 +62,8 @@ up_configs:
   wy: false
   aug: false
   # Any initialization applied to dy,ly,wy
-  ly_init: LA
-  dy_init: CDT
+  ly_init: CDT
+  dy_init: Ones
   wy_init: Ones
 
   # Parameters if use logit adjustment of CDT initialization

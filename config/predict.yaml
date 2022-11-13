@@ -1,12 +1,18 @@
 # System
-gpu_num: 0
+gpu_num: 0,1,2
 
 # Model
-train_serial: '20221110_032006' # ex) '20221012_174254'
+train_serial: '20221112_015622' # ex) '20221012_174254'
 
 # Data
-batch_size: 10
+batch_size: 6
 num_workers: 0
-
+# Model
+architecture: DeepLabV3Plus
+encoder: timm-efficientnet-b1 #timm-regnety_016
+encoder_weight: noisy-student #imagenet
+depth: 5
+n_classes: 4
+activation: null
 # Logging
 verbose: false

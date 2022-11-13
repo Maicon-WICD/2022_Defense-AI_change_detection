@@ -33,7 +33,6 @@ class SegDataset(Dataset):
 
     def __getitem__(self, id_: int):
         
-        filename = os.path.basename(self.x_paths[id_]) # Get filename for logging
         x = cv2.imread(self.x_paths[id_], cv2.IMREAD_COLOR)
         orig_size = x.shape
 
@@ -46,10 +45,10 @@ class SegDataset(Dataset):
             y = cv2.imread(self.y_paths[id_], cv2.IMREAD_GRAYSCALE)
             y = cv2.resize(y, self.input_size, interpolation=cv2.INTER_NEAREST)
 
-            return x, y, filename
+            return x, y
 
         elif self.mode in ['test']:
-            return x, orig_size, filename
+            return x, orig_size
 
         else:
             assert False, f"Invalid mode : {self.mode}"

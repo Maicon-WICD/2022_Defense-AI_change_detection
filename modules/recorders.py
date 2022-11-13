@@ -14,8 +14,6 @@ class Recorder():
     def __init__(self,
                  record_dir: str,
                  model: 'model',
-                 optimizer: 'optimizer',
-                 scheduler: 'scheduler',
                  amp: 'amp'=None,
                  logger: logging.RootLogger=None):
         """Recorder 초기화
@@ -32,8 +30,6 @@ class Recorder():
 
         self.logger = logger
         self.model = model
-        self.optimizer = optimizer
-        self.scheduler = scheduler
         self.amp = amp
         os.makedirs(self.plot_dir, exist_ok=True)
 
@@ -63,18 +59,9 @@ class Recorder():
         self.logger.debug(f"RECORDER | record saved: {self.record_filepath}")
 
     def save_weight(self, epoch: int)-> None:
-        """Weight 저장
-            amp 추가
-        Args:
-            loss (float): validation loss
-            model (`model`): model
-        
-        """
         check_point = {
             'epoch': epoch + 1,
             'model': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-            'scheduler': self.scheduler.state_dict() if self.scheduler else None,
             'amp': self.amp.state_dict() if self.amp else None}
 
         torch.save(check_point, self.weight_path)
