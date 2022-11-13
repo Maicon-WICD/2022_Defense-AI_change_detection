@@ -1,0 +1,12 @@
+# System
+gpu_num: 1
+
+# Model
+train_serial: 'DeepLabV3Plus_timm-regnetx-064_imagenet_logsoftmax_b2_stride8_focalLoss_clahe_CenCro_delNoise' # ex) '20221012_174254'
+
+# Data
+batch_size: 8
+num_workers: 12
+
+# Logging
+verbose: false
