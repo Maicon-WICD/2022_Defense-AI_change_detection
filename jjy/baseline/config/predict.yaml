@@ -1,0 +1,15 @@
+# System
+gpu_num: 1
+
+# Model path
+model_path: 'exp' # ex) '20221012_174254'
+
+# output path
+output_path: 'output'
+
+# Data
+batch_size: 60
+num_workers: 12
+
+# Logging
+verbose: True

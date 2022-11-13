@@ -1,0 +1,68 @@
+# System
+gpu_num: 2
+seed: 42
+debug: False
+verbose: True
+
+# Train / val
+val_size: 0.2
+
+#save
+save_dir_name: exp
+
+# Data path
+data_path: /home/test/workspace/datasets/train
+
+# Data Loader
+input_width: 704
+input_height: 352
+scaler: clahe
+num_workers: 12
+shuffle: True
+drop_last: True
+
+# Model
+architecture: DeepLabV3Plus
+encoder: efficientnet-b3 #timm-regnety_016
+encoder_weight: imagenet #imagenet
+depth: 5
+n_classes: 4
+activation: logsoftmax
+stride: 16
+
+# Trainer
+n_epochs: 100
+batch_size: 16
+loss: 
+  name: FocalLoss # MeanCCELoss
+  args:
+    weight: [1, 1, 1, 1]
+metrics: 
+  - miou
+  - iou1
+  - iou2
+  - iou3
+earlystopping_target: val_miou
+earlystopping_patience: 11
+optimizer:
+  name: Adam
+  args:
+    lr: 5.0e-04
+    weight_decay: 5.0e-02
+scheduler:
+  name: ReduceLROnPlateau
+  args:
+    patience: 5
+    factor: 0.5
+  # name: CosineAnnealingLR
+  # args:
+  #   T_max: 100
+  #   eta_min: 0
+
+# Logging
+plot:
+  - loss
+  - miou
+  - iou1
+  - iou2
+  - iou3
