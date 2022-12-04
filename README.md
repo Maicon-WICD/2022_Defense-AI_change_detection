@@ -20,19 +20,19 @@
 - baseline 코드에 focaloss, clahe scaler, agumentation을 추가하고 stride를 변경 할 수 있도록 코드를 작성했습니다.
     - focal loss 추가
     ```
-    ./modules/losses.py (line 87-110)
+    ./code/modules/losses.py (line 87-110)
     ```
     - clahe scaler 추가
     ```
-    ./modules/losses.py (line 38-49)
+    ./code/modules/losses.py (line 38-49)
     ```
     - albumentations을 사용한 agumentation 추가
     ```
-    ./modules/datasets.py (line 43-76)
+    ./code/modules/datasets.py (line 43-76)
     ```
     - stride 변경 코드 추가:
     ```
-    ./modules/train.py (line 99)
+    ./code/modules/train.py (line 99)
     ```
 
 
