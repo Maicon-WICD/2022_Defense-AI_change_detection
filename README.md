@@ -4,12 +4,12 @@
 
 
 # 핵심 파일 설명
-  - 노이즈데이터 제거 코드 : `./delNoise.py`
-  - 학습 데이터 경로: `./data/train/`
-  - 학습 메인 코드: `./train.py`
-  - 테스트 메인 코드: `./predict.py`
-  - 테스트 이미지, 마스크 경로: `./data/test/`
-  - 테스트 결과 이미지 경로: `./results/pred/`
+  - 노이즈데이터 제거 코드 : `./code/delNoise.py`
+  - 학습 데이터 경로: `./code/data/train/`
+  - 학습 메인 코드: `./code/train.py`
+  - 테스트 메인 코드: `./code/predict.py`
+  - 테스트 이미지, 마스크 경로: `./code/data/test/`
+  - 테스트 결과 이미지 경로: `./code/results/pred/`
 
 ## 코드 구조 설명
 
